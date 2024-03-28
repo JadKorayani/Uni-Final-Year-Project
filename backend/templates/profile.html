@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User Profile Navigation</title>
+</head>
+<body>
+
+<div class="profile-nav-container">
+    <header>
+        <nav>
+            <button onclick="window.location.href='/nav_options';">☰</button>
+            <span>Welcome {{ session.get('first_name', 'Guest') }}</span>
+            <span>App logo</span>
+        </nav>
+    </header>
+    
+    <main>
+        <div class="user-image">
+            <img src="path_to_user_image.jpg" alt="User pic">
+        </div>
+        
+        <div class="navigation-options">
+            <!-- Redirect to the User Details page -->
+            <button type="button" onclick="window.location.href='/user_details';"><span>👤</span> User details</button>
+        
+            <!-- Redirect to the Visited Restaurants page -->
+            <button type="button" onclick="window.location.href='/visited_restaurants';"><span>📍</span> Visited restaurants</button>
+        
+            <!-- Redirect to the My Blogs page -->
+            <button type="button" onclick="window.location.href='/my_blogs';"><span>⭐</span> My blogs</button>
+        </div>
+        
+    </main>
+</div>
+
+</body>
+</html>

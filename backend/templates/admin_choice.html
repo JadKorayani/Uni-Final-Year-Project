@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Choose Role</title>
+</head>
+<body>
+    <h1>Choose your role</h1>
+    <!-- Direct to a route that sets the session for admin view -->
+    <a href="{{ url_for('set_role', role='admin') }}">Admin Dashboard</a>
+    <br>
+    <!-- Direct to a route that sets the session for user view -->
+    <a href="{{ url_for('set_role', role='user') }}">User View</a>
+</body>
+</html>

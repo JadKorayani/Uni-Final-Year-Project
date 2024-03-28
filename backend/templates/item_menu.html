@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ menu_item.Name }} - Details</title>
+</head>
+<body>
+
+<div class="menu-item-details-container">
+    <header>
+        <a href="{{ url_for('selected_restaurant', restaurant_id=restaurant.RestaurantID) }}" class="back-button">← Back to Menu</a>
+        <h1>{{ menu_item.Name }}</h1>
+    </header>
+    
+    <main>
+        <section class="menu-item-description">
+            <h2>Description:</h2>
+            <p>{{ menu_item.Description }}</p>
+            <p><strong>Price:</strong> {{ menu_item.Price }}</p>
+        </section>
+    </main>
+</div>
+
+</body>
+</html>

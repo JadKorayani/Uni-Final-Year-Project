@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Page</title>
+</head>
+<body>
+    <h2>Add Restaurant</h2>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        {{ form.name.label }} {{ form.name() }}<br>
+        {{ form.address.label }} {{ form.address() }}<br>
+        {{ form.contact_info.label }} {{ form.contact_info() }}<br>
+        {{ form.submit() }}
+    </form>
+
+    <h2>Restaurants</h2>
+    <ul>
+    {% for restaurant in restaurants %}
+        <li>{{ restaurant.Name }} - {{ restaurant.Address }} - {{ restaurant.ContactInfo }}</li>
+    {% endfor %}
+    </ul>
+</body>
+</html>

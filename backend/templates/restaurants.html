@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Restaurant List</title>
+</head>
+<body>
+
+<div class="restaurants-container">
+    <header>
+        <nav>
+            <button onclick="window.location.href='/nav_options';">☰</button>
+            <span>Welcome {{ session.get('first_name', 'Guest') }}</span>
+            <span>App logo</span>
+        </nav>
+    </header>
+    
+    <main>
+        <div class="search-bar">
+            <input type="text" placeholder="Search restaurants, allergens,...">
+            <button type="submit">🔍</button>
+        </div>
+        
+        <h2>(Affiliated restaurants)</h2>
+        
+        <div class="restaurant-list">
+            {% for restaurant in restaurants %}
+            <button type="button" onclick="location.href='/selected_restaurant/{{ restaurant.RestaurantID }}'">{{ restaurant.Name }}</button>
+        {% endfor %}
+        </div>
+    </main>
+</div>
+
+</body>
+</html>

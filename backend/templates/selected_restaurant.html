@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ restaurant.Name }} - Menu Options</title>
+</head>
+<body>
+
+<div class="restaurant-menu-container">
+    <header>
+        <a href="{{ url_for('restaurants') }}" class="back-button">← Back to Restaurants</a>
+        <h1>{{ restaurant.Name }}</h1> <!-- Use 'restaurant.Name' assuming the restaurant name is stored in the 'Name' attribute of the 'restaurant' object -->
+    </header>
+    
+    <main>
+        <div class="search-section">
+            <input type="search" placeholder="Find menu item">
+            <button type="submit">Search</button>
+        </div>
+        
+        <section class="menu-section">
+            <h2>What you can eat:</h2>
+            <div class="menu-items">
+                {% for menu_item in menu_items %}
+                    <form action="{{ url_for('item_menu', menu_item_id=menu_item.MenuItemID) }}" method="GET">
+                        <button type="submit" class="menu-item">{{ menu_item.Name }}</button>
+                    </form>
+                {% else %}
+                    <div class="menu-item">
+                        <span>No items found that match your dietary preferences.</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+</div>
+
+</body>
+</html>

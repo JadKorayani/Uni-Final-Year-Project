@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Allergy Information</title>
+</head>
+<body>
+
+<div class="allergy-info-container">
+    <header>
+        <nav>
+            <button onclick="window.location.href='/nav_options';">☰</button>
+            <span>Welcome {{ session.get('first_name', 'Guest') }}</span>
+            <span>App logo</span>
+        </nav>
+    </header>
+    
+    <main>
+        <h1>Allergy Information</h1>
+        <p>What allergy do you have: (you can choose more than one)</p>
+        
+        <form action="{{ url_for('allergy_information') }}" method="post">
+            <label for="allergies">Allergies</label>
+            <select id="allergies" name="allergies" multiple>
+                {% for allergen in allergens %}
+                    <option value="{{ allergen.AllergenID }}">{{ allergen.Name }}</option>
+                {% endfor %}
+            </select>
+            
+            <button type="submit">Confirm</button>
+        </form>
+        
+    </main>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,19 @@
+<!-- templates/admin/edit_restaurant.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Restaurant</title>
+</head>
+<body>
+    <h1>Edit Restaurant</h1>
+    <form action="{{ url_for('edit_restaurant', id=restaurant.RestaurantID) }}" method="post">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" value="{{ restaurant.Name }}" required>
+        <label for="address">Address:</label>
+        <input type="text" id="address" name="address" value="{{ restaurant.Address }}" required>
+        <button type="submit">Update Restaurant</button>
+    </form>
+    <a href="{{ url_for('admin_restaurants') }}">Back to List</a>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>App Menu</title>
+</head>
+<body>
+
+<div class="menu-container">
+    <header>
+        <nav>
+            <button onclick="window.location.href='/nav_options';">☰</button>
+            <span>Welcome {{ session.get('first_name', 'Guest') }}</span>
+            <span>App logo</span>
+        </nav>
+    </header>
+    
+    <main>
+        <ul class="menu-list">
+            <li><button type="button" onclick="window.location.href='/profile';"><span>👤</span> Profile</button></li>
+            <li><button type="button" onclick="window.location.href='/restaurants';"><span>🍴</span> Restaurants</button></li>
+            <li><button type="button" onclick="window.location.href='/about';"><span>ℹ️</span> About</button></li>
+            <li><button type="button" onclick="window.location.href='/contact';"><span>📞</span> Contact</button></li>
+            <li><button type="button" onclick="window.location.href='/logout';"><span>🚪</span> Log out</button></li>
+        </ul>
+    </main>
+</div>
+
+</body>
+</html>

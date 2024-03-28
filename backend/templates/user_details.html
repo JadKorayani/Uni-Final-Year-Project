@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User Profile - SafeDine</title>
+</head>
+<body>
+
+<div class="profile-container">
+    <header>
+        <nav>
+            <button onclick="window.location.href='/nav_options';">☰</button>
+            <span>Welcome {{ session.get('first_name', 'Guest') }}</span>
+            <span>App logo</span>
+        </nav>
+    </header>
+    
+    <main>
+        <div class="user-image">
+            <img src="path_to_user_image.jpg" alt="User pic">
+        </div>
+        
+        <h1>SafeDine</h1>
+        
+        <div class="user-info">
+            <h2>First Name: {{ first_name }}</h2>
+            <h2>Last Name: {{ last_name }}</h2>
+            
+            <section class="allergies">
+                <h3>Allergies:</h3>
+                <ul>
+                    {% for allergy in allergies %}
+                        <li>{{ allergy }}</li>
+                    {% endfor %}
+                </ul>
+            </section>
+        </div>
+    </main>
+</div>
+
+</body>
+</html>
