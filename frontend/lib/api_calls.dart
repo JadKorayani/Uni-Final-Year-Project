@@ -44,7 +44,6 @@ class ApiService {
     if (response.statusCode == 200) {
       // Check if the body actually contains the data we expect
       var data = json.decode(response.body);
-      print(data);
       if (data is List) {
         return data;
       } else {
@@ -69,11 +68,9 @@ class ApiService {
       body: json.encode(userData),
     );
     if (response.statusCode == 200) {
-      print('sucess');
       // Handle successful signup
       // This could involve navigating to another screen or storing user data
     } else {
-      print("error");
       // Handle errors or unsuccessful signup
       // You might throw an exception or return a custom error message
     }
@@ -103,7 +100,6 @@ class ApiService {
       //final List<dynamic> data = json.decode(response.body);
       // Extract restaurant names from the data
       //final List<String> restaurants = List<String>.from(data);
-      //print(data);
       return response;
     } else {
       // If the request fails, throw an exception
