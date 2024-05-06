@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'nav_options.dart'; // Adjust this import as necessary.
+import 'nav_options.dart'; // Assuming this is where your AppDrawer is defined.
 
 void main() => runApp(const MyApp());
 
@@ -10,7 +10,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       title: 'Contact',
       home: ContactScreen(),
     );
@@ -18,19 +18,22 @@ class MyApp extends StatelessWidget {
 }
 
 class ContactScreen extends StatelessWidget {
-  const ContactScreen({super.key});
+  ContactScreen({super.key});
+
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey, // Use the global key here
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () => Scaffold.of(context).openDrawer(),
+          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
         title: const Text('Contact Information'),
       ),
-      drawer: const AppDrawer(), // Assuming this contains your drawer widget.
+      drawer: const AppDrawer(), // Assuming this contains your drawer widget
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -41,12 +44,11 @@ class ContactScreen extends StatelessWidget {
               onTap: () async {
                 final Uri emailLaunchUri = Uri(
                   scheme: 'mailto',
-                  path: 'contact@allergyfriendlyeats.com',
+                  path: 'korayanj@roehampton.ac.uk',
                 );
                 if (await canLaunchUrl(emailLaunchUri)) {
                   await launchUrl(emailLaunchUri);
                 } else {
-                  // ignore: use_build_context_synchronously
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Could not launch email app')),
                   );
@@ -60,31 +62,6 @@ class ContactScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   const Text('contact@allergyfriendlyeats.com'),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            InkWell(
-              onTap: () async {
-                final Uri url =
-                    Uri.parse('https://www.linkedin.com/in/your-profile');
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(url);
-                } else {
-                  // ignore: use_build_context_synchronously
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Could not launch LinkedIn')),
-                  );
-                }
-              },
-              child: Row(
-                children: [
-                  SvgPicture.asset(
-                    'assets/linkedin-icon.svg',
-                    height: 24,
-                  ),
-                  const SizedBox(width: 8),
-                  const Text('LinkedIn Profile'),
                 ],
               ),
             ),

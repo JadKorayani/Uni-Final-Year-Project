@@ -5,7 +5,7 @@ import 'package:safe_dine/api_calls.dart';
 void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key});
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
         restaurantName: 'Restaurant Name',
         restaurantID: '',
         email: '',
-      ), // Pass your restaurant name here
+      ),
     );
   }
 }
@@ -46,29 +46,26 @@ class _SelectedRestaurantScreenState extends State<SelectedRestaurantScreen> {
   @override
   void initState() {
     super.initState();
-    fetchUserData();
+    fetchMenuItems();
   }
 
-  Future<void> fetchUserData() async {
-    ApiService apiService = ApiService(); // Create an instance of ApiService
+  Future<void> fetchMenuItems() async {
+    ApiService apiService = ApiService();
     try {
       var response =
           await apiService.fetchRightItem(widget.restaurantID, widget.email);
 
-      print(response.statusCode);
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
-        print(data);
-        // Extract menu items from the response and update the state
         setState(() {
           menuItems = List<String>.from(data['menu_items']);
         });
       } else {
-        print("response is : " + response.body);
-        throw Exception('Failed to load items');
+        print("Response error: ${response.body}");
+        throw Exception('Failed to load menu items');
       }
     } catch (e) {
-      print('Failed to load items: $e');
+      print('Error loading menu items: $e');
       // Consider showing an error message or some UI indication
     }
   }
@@ -79,9 +76,7 @@ class _SelectedRestaurantScreenState extends State<SelectedRestaurantScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            // Navigate back to the restaurant list
-          },
+          onPressed: () => Navigator.pop(context),
         ),
         title: Text(widget.restaurantName),
       ),
@@ -91,7 +86,7 @@ class _SelectedRestaurantScreenState extends State<SelectedRestaurantScreen> {
             padding: const EdgeInsets.all(16.0),
             child: TextField(
               onSubmitted: (String value) {
-                // Implement the search logic
+                // Implement the search logic here
               },
               decoration: const InputDecoration(
                 hintText: 'Find menu item',
@@ -112,7 +107,9 @@ class _SelectedRestaurantScreenState extends State<SelectedRestaurantScreen> {
               itemBuilder: (BuildContext context, int index) {
                 return ListTile(
                   title: Text(menuItems[index]),
-                  onTap: () {},
+                  onTap: () {
+                    // Action when a menu item is tapped
+                  },
                 );
               },
             ),
