@@ -1,64 +1,90 @@
-from flask import Flask, request, g, render_template, url_for, redirect, session, make_response, flash
+# Import libraries 
+from flask import Flask, jsonify, request, g, render_template, url_for, redirect, session
 from databse import get_db
 from werkzeug.security import generate_password_hash, check_password_hash
-from functools import wraps
 import os
 
-
+# Initialize a Flask application instance
 app = Flask(__name__)
+# Generating a secure secret key
+app.secret_key = os.urandom(24)  
+# Only send cookie over HTTPS
+app.config['SESSION_COOKIE_SECURE'] = True
+# Make sure sessions are not permanent
+app.config['SESSION_PERMANENT'] = False  
 
-# Set a secret key for sessions
-app.secret_key = os.urandom(24)  # Generating a secure secret key
 
+# Close database to avoid data leaks
 @app.teardown_appcontext
 def close_db(error):
+    """Closes the database connection automatically at the end of the request cycle.
+    This function is triggered automatically when the Flask application context is torn down. 
+    It checks if a database connection exists and closes it to prevent any potential data leaks or holding unused resources."""
+
     if hasattr(g, 'sqlite_db'):
-        g.sqlite_db.close()   # to avoid data leaks and 
+        g.sqlite_db.close() 
 
 
-@app.route('/')
-def index():
-    return ('test')
-
-@app.route('/welcome')
-def welcome():
-    return render_template('welcome.html')
-
-
-@app.route('/signup', methods=['GET', 'POST'])
+# Signup route
+@app.route('/signup', methods=['POST'])
 def signup():
+    """Handles the signup process for new users via a web form.
+    This function supports both GET and POST methods. On a POST request, it processes the incoming JSON data to register a new user. 
+    It checks for existing user emails, hashes the password for security, and inserts the new user data into the database. 
+    If the email already exists, it returns an error. Successfully registered users are logged in automatically."""
+
     if request.method == 'POST':
+        # Access JSON data from the request
+        data = request.json
+
         db = get_db()
-        existing_user = db.execute('SELECT email FROM users WHERE email = ?', [request.form['email']]).fetchone()
+        existing_user = db.execute(
+            'SELECT email FROM users WHERE email = ?',
+            [data['Email']]
+        ).fetchone()
 
         if existing_user:
-            return render_template('signup.html', error='User already exists')
+            # Return an error message in JSON format
+            return jsonify({'error': 'User already exists'}), 400
 
         # Hash the password
-        hashed_password = generate_password_hash(request.form['password'])
+        hashed_password = generate_password_hash(data['password'])
 
         # Insert data into the database with the hashed password
-        db.execute('INSERT INTO Users (Name, FamilyName, Email, AllergyInformation, PasswordHash) VALUES (?, ?, ?, ?, ?)',
-                   [request.form['first_name'], request.form['last_name'], request.form['email'], '', hashed_password])
+        db.execute(
+            'INSERT INTO Users (Name, FamilyName, Email, AllergyInformation, PasswordHash) VALUES (?, ?, ?, ?, ?)',
+            [data['first_name'], data['last_name'], data['Email'], '', hashed_password]
+        )
         db.commit()
 
         # Log in the user by setting the session variables
-        session['email'] = request.form['email']
+        session['Email'] = data['Email']
         
-        return redirect(url_for('allergy_information'))
-    return render_template('signup.html')
+        # Return a success response
+        return jsonify({'message': 'User registered successfully'}), 200
+
+    # For a GET request, or any other method, you might want to return a different response
+    return jsonify({'message': 'Send POST request with signup data'}), 405
 
 
-@app.route('/user_details')
+# user_details route
+@app.route('/user_details', methods=['GET'])
 def user_details():
-    if 'email' not in session:
-        return redirect(url_for('login'))
-    email = session.get('email')
-    if not email:
-        return redirect(url_for('login'))
+    """Retrieves detailed user information for a specified email via a GET request.
+    This endpoint expects an email as a query parameter ('user_id'). 
+    It fetches basic user details like UserID, Name, FamilyName, and Email from the Users table. 
+    If the user exists, it also retrieves related allergy information by joining the UserAllergyRelationship and Allergens tables. 
+    The function constructs a JSON response with user details and a list of allergies if applicable. 
+    If no user matches the provided email, it returns a 'User not found' error.
+    This function is useful for clients needing comprehensive user profiles including allergy details."""
 
+    # Access database
     db = get_db()
-    user = db.execute('SELECT UserID, Name, FamilyName FROM Users WHERE Email = ?', [email]).fetchone()
+    # Request user_id from the frontend through the API call
+    email = request.args.get('user_id')
+
+    # Execute sql query to get UserID, Name, FamilyName, Email from database
+    user = db.execute('SELECT UserID, Name, FamilyName, Email FROM Users WHERE Email = ?', [email]).fetchone()
 
     if user:
         # Fetch the user's allergies by joining the UserAllergyRelationship and Allergens tables
@@ -70,136 +96,181 @@ def user_details():
         # Convert the list of rows into a list of allergy names
         allergy_names = [allergy['Name'] for allergy in allergies]
 
-        return render_template('user_details.html', 
-                               first_name=user['Name'], 
-                               last_name=user['FamilyName'], 
-                               allergies=allergy_names)
+         # Construct and return a successful JSON response
+        response = {
+                "success": True,
+                "message": "User details successfully retreived!",
+                "user_id": user['UserID'],
+                "email": user['Email'],
+                "first_name": user['Name'],
+                "last_name": user['FamilyName'],
+                "allergy": allergy_names
+            }
+        return jsonify(response), 200
     else:
         return 'User not found', 404
 
 
-@app.route('/login', methods=['GET', 'POST'])
+# login route
+@app.route('/login', methods=['POST'])
 def login():
+    """Handles user login via a POST request, validating email and password.
+    On receiving a POST request with email and password in JSON format, this function checks the credentials against the database. 
+    If the credentials are valid, it sets session variables for the user and returns a success message with user details. 
+    If the credentials do not match, it returns an error message indicating an invalid login attempt."""
+
     if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
+        # Get JSON data from the request
+        data = request.get_json()  # This parses the JSON data sent with the request
         
+        # Access the email and password from the parsed JSON data
+        email = data['email']
+        password = data['password']
+       
         db = get_db()
+        # Execute the query to find the user by email
         user = db.execute('SELECT * FROM Users WHERE Email = ?', (email,)).fetchone()
-        
+       
+        # Check if the user exists and the password is correct
         if user and check_password_hash(user['PasswordHash'], password):
+            # Set user information in the session
             session['user_id'] = user['UserID']
-            session['email'] = user['Email']  # Using 'email' to be consistent with your database and session checks
+            session['Email'] = user['Email']
+
+            # Construct and return a successful JSON response
+            response = {
+                "success": True,
+                "message": "Login successful",
+                "user_id": user['UserID'],
+                "email": user['Email']
+            }
             
-            # Redirect to a different page based on the user's role (not considering IsAdmin)
-            return redirect(url_for('user_details'))
+            return jsonify(response), 200
         else:
-            flash('Invalid email or password')
-    return render_template('login.html')
+            # Construct and return a JSON response for failed login
+            response = {
+                "success": False,
+                "message": "Invalid email or password"
+            }
+            return jsonify(response), 401
 
 
-'''@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
-        
-        db = get_db()
-        user = db.execute('SELECT * FROM Users WHERE Email = ?', (email,)).fetchone()
-        
-        if user and check_password_hash(user['PasswordHash'], password):
-            session['user_id'] = user['UserID']
-            session['email'] = user['Email']  # Using 'email' to be consistent with your database and session checks
-            
-            # Assuming you added an IsAdmin column
-            session['is_admin'] = user['IsAdmin']
-
-
-            
-            # Redirect to a different page based on whether the user is an admin
-            if session['is_admin']:
-                return redirect(url_for('admin_dashboard'))
-            else:
-                return redirect(url_for('index'))
-        else:
-            flash('Invalid email or password')
-    return render_template('login.html')'''
-
-
-
+# get_allergens route
+@app.route('/get_allergens', methods=['GET'])
 def get_allergens():
+    """Fetches and returns a list of all allergens from the database via a GET request.
+    This endpoint retrieves the AllergenID and Name for each allergen stored in the Allergens table and returns them as a list of dictionaries. 
+    Useful for clients needing to display or utilize allergen information."""
+
+    # Access database
     db = get_db()
+    # Execute SQL query to get AllergenID and Name from database
     allergens = db.execute('SELECT AllergenID, Name FROM Allergens').fetchall()
-    return allergens
+    return [{'AllergenID': allergen['AllergenID'], 'Name': allergen['Name']} for allergen in allergens]
 
 
-@app.route('/allergy_information', methods=['GET', 'POST'])
-def allergy_information():
+# save_allergy route
+@app.route('/save_allergy', methods=['POST'])
+def save_allergy():
+    """Adds a user's allergy information to the database via a POST request.
+    Accepts JSON data containing a user's email (UserID) and an allergen ID (AllergenID). 
+    If the specified user is found, it inserts a record linking the user and allergen into the UserAllergyRelationship table. 
+    Returns a success message if the allergy is added successfully, and instructs to use POST if another method is attempted."""
+
     if request.method == 'POST':
-        selected_allergens = request.form.getlist('allergies')
-        
-        email = session.get('email')
-        if not email:
-            return redirect(url_for('login'))
-        
+        # Access JSON data from the request
+        data = request.json
+        # Get the UserID from the frontend through API call
+        userID = data['UserID']
+        # Access the database
         db = get_db()
+        # Get the 
+        user_id = db.execute('SELECT UserID FROM Users WHERE Email = ?', (userID,)).fetchone()
+
+        if user_id:
+            # Extract the UserID from the tuple
+            user_id = user_id[0]
+            # Insert data into the database with the hashed password
+            db.execute(
+                'INSERT INTO UserAllergyRelationship (UserID, AllergenID) VALUES (?, ?)',
+                [user_id, data['AllergenID']]
+                )
+            db.commit()
+            # Return a success response
+            return jsonify({'message': 'Allergy added successfully'}), 200
+
+    # For a GET request, or any other method, you might want to return a different response
+    return jsonify({'message': 'Send POST request with signup data'}), 405
+
+
+# allergy_information route
+@app.route('/allergy_information', methods=['GET'])
+def allergy_information():
+    """Retrieves comprehensive allergy information for a specified user via a GET request.
+    This function uses an email provided as a 'user_id' query parameter to fetch the user's ID. 
+    If the user exists, it retrieves a complete list of all allergens and the allergens specifically selected by the user, 
+    marking each allergen as selected or not in the response. 
+    Returns detailed allergen data if the user is found, or an error message if the user is not found or not specified."""
+
+    # Access the database
+    db = get_db()
+    # Get the user_id from the frontend through API call
+    email = request.args.get('user_id')
+    
+    if email:
+        # Execute SQL query to get UserID from database
         user = db.execute('SELECT UserID FROM Users WHERE Email = ?', [email]).fetchone()
-        
-        # Clear existing user-allergen relationships
-        db.execute('DELETE FROM UserAllergyRelationship WHERE UserID = ?', [user['UserID']])
-        
-        # Insert new relationships
-        for allergen_id in selected_allergens:
-            db.execute('INSERT INTO UserAllergyRelationship (UserID, AllergenID) VALUES (?, ?)', 
-                       [user['UserID'], allergen_id])
-        
-        db.commit()
-        
-        return redirect(url_for('user_details'))
-    else:
-        allergens = get_allergens()
-        return render_template('allergy_information.html', allergens=allergens)
-
-
-
-
-@app.route('/profile')
-def profile():
-    # Assuming user's email is stored in session after login/signup
-    user_email = session.get('email')
-    if user_email:
-        db = get_db()
-        user = db.execute('SELECT * FROM Users WHERE Email = ?', [user_email]).fetchone()
         if user:
-            return render_template('profile.html', user=user)
+            # Fetch all allergens
+            allergens = db.execute('SELECT AllergenID, Name FROM Allergens').fetchall()
+            allergens_list = [{'AllergenID': allergen['AllergenID'], 'Name': allergen['Name']} for allergen in allergens]
+
+            # Fetch user-specific selected allergens
+            selected_allergens = db.execute(
+                'SELECT AllergenID FROM UserAllergyRelationship WHERE UserID = ?', [user['UserID']]
+            ).fetchall()
+            selected_allergens_ids = [allergen['AllergenID'] for allergen in selected_allergens]
+
+            # Add a flag to each allergen indicating whether it's selected by the user
+            for allergen in allergens_list:
+                allergen['Selected'] = allergen['AllergenID'] in selected_allergens_ids
+
+            return jsonify(allergens_list)
         else:
-            # Handle case where user is not found (e.g., redirect to login)
-            return redirect(url_for('login'))
+            return jsonify({'error': 'User not found'}), 404
     else:
-        # No email in session, redirect to login
-        return redirect(url_for('login'))
+        # If no user is logged in, or if you're handling this differently in your Flutter app,
+        # you might want to return just the list of allergens or handle the error appropriately.
+        return jsonify({'error': 'User not authenticated'}), 401
 
 
-@app.route('/nav_options')
-def nav_options():
-    return render_template('nav_options.html')
-
+# restaurants route
 @app.route('/restaurants')
 def restaurants():
-    db = get_db()
-    # Fetch all restaurants from the database
-    all_restaurants = db.execute('SELECT * FROM Restaurants').fetchall()
-    return render_template('restaurants.html', restaurants=all_restaurants)
+    """Retrieves and returns a list of all restaurants along with their IDs from the database.
+    Fetches restaurant names and IDs from the Restaurants table and packages them into separate lists, which are then returned together as JSON data."""
 
-def get_restaurant_details(restaurant_id):
+    # Access the database
+    db = get_db()
+    restaurant_query = db.execute('SELECT Name, RestaurantID FROM Restaurants').fetchall()
+    restaurants = [restaurant['Name'] for restaurant in restaurant_query]
+    restaurants_id = [restaurant['RestaurantID'] for restaurant in restaurant_query]
+
+    return jsonify(restaurants, restaurants_id)
+
+
+# get_restaurant_details route
+def get_restaurant_details(restaurant_id, methods=['GET']): 
+    """ Get restaurants details from the database. """
     db = get_db()
     restaurant_details = db.execute(
         'SELECT * FROM Restaurants WHERE RestaurantID = ?',
         [restaurant_id]
     ).fetchone()
-    return restaurant_details
+    return jsonify(restaurant_details)
 
 
+# item_menu route
 @app.route('/item_menu/<int:menu_item_id>')
 def item_menu(menu_item_id):
     db = get_db()
@@ -214,62 +285,62 @@ def item_menu(menu_item_id):
     return render_template('item_menu.html', menu_item=menu_item, restaurant=restaurant)
 
 
+# selected_restaurant route
+@app.route('/selected_restaurant', methods=['GET'])
+def selected_restaurant():
+    """Retrieves a list of menu items from a specified restaurant that are safe for a user with allergies via a GET request.
+    This function uses an email to identify the user and a restaurant ID to specify the establishment. 
+    It first fetches the user's allergy IDs, then finds related ingredient IDs that the user must avoid. 
+    It queries the restaurant's menu items to exclude those containing the identified allergenic ingredients. 
+    Returns a list of safe menu items for the user, or all menu items if no allergenic ingredients are found."""
 
-@app.route('/selected_restaurant/<int:restaurant_id>')
-def selected_restaurant(restaurant_id):
-    user_email = session.get('email')
-    if not user_email:
-        # Handle case where user is not logged in or session expired
-        return redirect(url_for('login'))
-
+    # Acess the database
     db = get_db()
-    user = db.execute('SELECT UserID FROM Users WHERE Email = ?', [user_email]).fetchone()
-
-    # Step 1: Fetch user's allergies
-    allergies = db.execute('''SELECT AllergenID FROM UserAllergyRelationship WHERE UserID = ?''', [user['UserID']]).fetchall()
+    # Get the email from the frontend through API call
+    email = request.args.get('email')
+    # Get the restID from the frontend through API call
+    restaurant_id = request.args.get('restID')
+    # Execute SQL query to get UserID from database
+    user = db.execute('SELECT UserID FROM Users WHERE Email = ?', [email]).fetchone()
+    # Execute SQL query to get AllergenID from databas
+    allergies = db.execute('SELECT AllergenID FROM UserAllergyRelationship WHERE UserID = ?', [user['UserID']]).fetchall()
     allergen_ids = [allergy['AllergenID'] for allergy in allergies]
-
-    # Step 2: Identify ingredients linked to these allergens
-    ingredients = db.execute('''SELECT IngredientID FROM AllergenIngredientRelationship WHERE AllergenID IN ({seq})'''.format(seq=','.join(['?']*len(allergen_ids))), allergen_ids).fetchall()
+    # Execute SQL IngredientID to get UserID from databas  
+    ingredients = db.execute('SELECT IngredientID FROM AllergenIngredientRelationship WHERE AllergenID IN ({seq})'.format(seq=','.join(['?']*len(allergen_ids))), allergen_ids).fetchall()
     ingredient_ids = [ingredient['IngredientID'] for ingredient in ingredients]
 
-    # Step 3: Filter menu items based on the identified ingredients
     if ingredient_ids:
-        menu_items = db.execute('''SELECT mi.* FROM MenuItems mi
+        # Modify the query to select only the item names
+        menu_items = db.execute('''SELECT mi.Name FROM MenuItems mi
                                    WHERE mi.RestaurantID = ? AND 
                                    NOT EXISTS (SELECT 1 FROM MenuItemIngredients mii 
                                                WHERE mii.MenuItemID = mi.MenuItemID 
                                                AND mii.IngredientID IN ({seq}))
                                    '''.format(seq=','.join(['?']*len(ingredient_ids))), [restaurant_id] + ingredient_ids).fetchall()
     else:
-        # If user has no allergies or no ingredients are associated with their allergies, fetch all menu items
-        menu_items = db.execute('SELECT * FROM MenuItems WHERE RestaurantID = ?', [restaurant_id]).fetchall()
+        menu_items = db.execute('SELECT Name FROM MenuItems WHERE RestaurantID = ?', [restaurant_id]).fetchall()
 
-    restaurant_details = get_restaurant_details(restaurant_id)
+    # Extract the item names from the rows
+    item_names = [item['Name'] for item in menu_items]
 
-    return render_template('selected_restaurant.html', restaurant=restaurant_details, menu_items=menu_items)
+    return jsonify(menu_items=item_names)
 
-
-@app.route('/about')
-def about():
-    return render_template('about.html')
-
-#@app.route('/item_menu')
-#def item_menu():
-#    return render_template('item_menu.html')
-
-
-@app.route('/contact')
-def contact():
-    return render_template('contact.html')
 
 @app.after_request
 def add_security_headers(response):
+    """Adds security-related headers to all responses to enhance privacy and security.
+    This function is executed after every request. 
+    It modifies the response to include headers that prevent caching of the response data by browsers or proxies, 
+    ensuring that sensitive data is not stored inadvertently. 
+    Specifically, it sets 'Cache-Control', 'Pragma', and 'Expires' headers to values that disable caching."""
+
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, public, max-age=0"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
     return response
 
+
+# logout route
 @app.route('/logout')
 def logout():
     # Clear specific session keys
@@ -280,79 +351,6 @@ def logout():
     return redirect(url_for('login'))
 
 
-# Admin related
-def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        # Check if 'is_admin' is in session and is True
-        if 'is_admin' not in session or not session['is_admin']:
-            flash('You need to be an admin to view this page.')
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return decorated_function
-
-@app.route('/admin/users')
-@admin_required  # Ensure this route is protected so only admins can access it
-def admin_users():
-    db = get_db()
-    users = db.execute('SELECT UserID, Name, Email FROM Users').fetchall()
-    return render_template('admin/admin_users.html', users=users)
-
-
-@app.route('/admin/admin_restaurants')
-@admin_required
-def admin_restaurants():
-    db = get_db()
-    restaurants = db.execute('SELECT * FROM Restaurants').fetchall()
-    return render_template('admin/admin_restaurants.html', restaurants=restaurants)
-
-
-@app.route('/admin/restaurants/add', methods=['GET', 'POST'])
-@admin_required
-def add_restaurant():
-    if request.method == 'POST':
-        name = request.form['name']
-        address = request.form['address']
-        db = get_db()
-        db.execute('INSERT INTO Restaurants (Name, Address) VALUES (?, ?)', (name, address))
-        db.commit()
-        return redirect(url_for('admin_restaurants'))
-    return render_template('admin/add_restaurant.html')
-
-@app.route('/admin/restaurants/edit/<int:id>', methods=['GET', 'POST'])
-@admin_required
-def edit_restaurant(id):
-    db = get_db()
-    if request.method == 'POST':
-        name = request.form['name']
-        address = request.form['address']
-        db.execute('UPDATE Restaurants SET Name = ?, Address = ? WHERE RestaurantID = ?', (name, address, id))
-        db.commit()
-        return redirect(url_for('admin_restaurants'))
-    restaurant = db.execute('SELECT * FROM Restaurants WHERE RestaurantID = ?', (id,)).fetchone()
-    return render_template('admin/edit_restaurant.html', restaurant=restaurant)
-
-
-@app.route('/admin/restaurants/delete/<int:id>', methods=['GET', 'POST'])
-@admin_required
-def delete_restaurant(id):
-    db = get_db()
-    restaurant = db.execute('SELECT * FROM Restaurants WHERE RestaurantID = ?', (id,)).fetchone()
-    
-    if request.method == 'POST':
-        db.execute('DELETE FROM Restaurants WHERE RestaurantID = ?', (id,))
-        db.commit()
-        return redirect(url_for('admin_restaurants'))
-    
-    return render_template('admin/delete_restaurant.html', restaurant=restaurant)
-
-
-@app.route('/admin/admin_dashboard')
-@admin_required
-def admin_dashboard():
-    # Admin dashboard logic here
-    return render_template('/admin/admin_dashboard.html')
-
-
+# Start the Flask server on all interfaces at port 8080 if run as the main program
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=8080)  

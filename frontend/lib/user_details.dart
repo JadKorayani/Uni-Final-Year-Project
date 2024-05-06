@@ -1,33 +1,50 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'nav_options.dart'; // Assuming you saved the AppDrawer in a separate file named app_drawer.dart
+//import 'package:http/http.dart' as http;
+import 'nav_options.dart'; // Ensure this import is correct based on your project structure
+import 'api_calls.dart';
 
-class UserDetailsScreen extends StatefulWidget {
-  const UserDetailsScreen({super.key});
+class UserDetailsPage extends StatefulWidget {
+  final String data;
+  const UserDetailsPage({super.key, required this.data});
 
   @override
-  // ignore: library_private_types_in_public_api
-  _UserDetailsState createState() => _UserDetailsState();
+  _UserDetailsPageState createState() => _UserDetailsPageState();
 }
 
-class _UserDetailsState extends State<UserDetailsScreen> {
+class _UserDetailsPageState extends State<UserDetailsPage> {
+  String firstName = '';
+  String lastName = '';
+  List<String> allergies = [];
+
   @override
-  Widget build(BuildContext context) {
-    return UserDetailsPage();
+  void initState() {
+    super.initState();
+    fetchUserData();
   }
-}
 
-class UserDetailsPage extends StatelessWidget {
-  // Dummy data for user profile
-  final String firstName = 'John';
-  final String lastName = 'Smith';
-  final List<String> allergies = [
-    'Allergy 1',
-    'Allergy 2',
-    'Allergy 3',
-    'Allergy 4'
-  ];
+  Future<void> fetchUserData() async {
+    ApiService apiService = ApiService(); // Create an instance of ApiService
+    try {
+      // Assume 'data' from the widget is used as a parameter in the API call
+      // var response = await apiService.userdetails(widget.data);
 
-  UserDetailsPage({super.key});
+      var response = await apiService.userdetails(widget.data);
+
+      if (response.statusCode == 200) {
+        var data = json.decode(response.body);
+        setState(() {
+          firstName = data['first_name'];
+          lastName = data['last_name'];
+          allergies = List<String>.from(data['allergy']);
+        });
+      } else {
+        throw Exception('Failed to load user details');
+      }
+    } catch (e) {
+      // Consider showing an error message or some UI indication
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,14 +60,15 @@ class UserDetailsPage extends StatelessWidget {
           ),
         ],
       ),
-      drawer: const AppDrawer(), // Use the AppDrawer widget here
+      drawer: const AppDrawer(), // Ensure this is correctly imported
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
             const CircleAvatar(
               radius: 50.0,
-              backgroundImage: NetworkImage('path_to_user_image.jpg'),
+              backgroundImage: NetworkImage(
+                  'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_VTsTN947wxfPvR6azPju20BotT7BNvh_VZLnjduuNQ&s'),
             ),
             const Text(
               'SafeDine',

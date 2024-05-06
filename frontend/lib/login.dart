@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:safe_dine/sign_up.dart';
+// import 'package:safe_dine/profile.dart';
 import 'package:safe_dine/user_details.dart';
+import 'api_calls.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const MyApp());
@@ -33,6 +36,49 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
+  Future<void> loginUser() async {
+    String email = _emailController.text;
+    String password = _passwordController.text;
+
+    Map<String, dynamic> userData = {
+      'email': email,
+      'password': password,
+    };
+    // dependency injection
+    ApiService apiService = ApiService(); // Create an instance of ApiService
+
+    try {
+      // Call the postData function to send login data to the API endpoint
+      var response = await apiService.postData('login',
+          userData); // 'login' is the endpoint for login // 'login' is the endpoint for login
+      String data_user = userData['email'];
+
+      // If the API call succeeds, navigate to the next screen
+      // ignore: use_build_context_synchronously
+      //Navigator.pushReplacementNamed(context, '/login');
+      print(userData);
+      print(response.statusCode);
+      if (response.statusCode == 200) {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('Email',
+            userData['email']); // Store the value with the specified key
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => UserDetailsPage(data: data_user)),
+        );
+      }
+    } catch (e) {
+      print("error $e");
+
+      // If the API call fails, show an error message
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Login failed! Please try again.'),
+      ));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,15 +123,8 @@ class _LoginScreenState extends State<LoginScreen> {
               obscureText: true,
             ),
             ElevatedButton(
-              onPressed: () {
-                // Here you would include your login logic and upon successful login, navigate to the ProfileScreen
-                Navigator.pushReplacement(
-                  // Using pushReplacement to prevent going back to the login screen
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const UserDetailsScreen()),
-                );
-              },
+              onPressed:
+                  loginUser, // Call loginUser method when the button is pressed
               child: const Text('Log in'),
             ),
             TextButton(
@@ -100,15 +139,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 side: const BorderSide(color: Colors.grey),
               ),
               child: const Text('New User? Register Now'),
-            ),
-            OutlinedButton(
-              onPressed: () {
-                // TODO: Handle Google sign-up process
-              },
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.grey),
-              ),
-              child: const Text('Continue with Google'),
             ),
           ],
         ),

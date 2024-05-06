@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:safe_dine/allergy_information.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'api_calls.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -14,6 +16,47 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
+  Future<void> signupUser() async {
+    // Ensure that all text is non-null by providing default empty strings
+    String firstName = _firstNameController.text;
+    String lastName = _lastNameController.text;
+    String email = _emailController.text;
+    String password = _passwordController.text;
+
+    Map<String, dynamic> userData = {
+      'first_name': firstName,
+      'last_name': lastName,
+      'Email': email,
+      'password': password,
+    };
+
+    ApiService apiService = ApiService(); // Create an instance of ApiService
+
+    try {
+      var response = await apiService.signUp(userData);
+      if (response.statusCode == 200) {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        // Use non-null email from userData with a default fallback
+        String emailToSave = userData['Email'] ?? 'default_email@example.com';
+        await prefs.setString('Email', emailToSave);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) =>
+                  AllergyInformationScreen(data: emailToSave)),
+        );
+      } else {
+        throw Exception(
+            'Failed to sign up with status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      print("Error during signup: $e");
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Signup failed! Please try again.'),
+      ));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,15 +100,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             ),
             const SizedBox(height: 32.0),
             ElevatedButton(
-              onPressed: () {
-                // TODO: Implement sign-up logic
-                // Here you would handle the sign-up logic, and after successful sign-up, navigate to the AllergyInformationScreen
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const AllergyInformationScreen()),
-                );
-              },
+              onPressed: signupUser,
               style: ElevatedButton.styleFrom(
                 foregroundColor: Colors.black,
                 backgroundColor: Colors.yellow[700], // text color
@@ -92,6 +127,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   void dispose() {
+    // Dispose controllers to avoid memory leaks
     _firstNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();

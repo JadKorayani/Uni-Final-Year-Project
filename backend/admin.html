@@ -1,0 +1,74 @@
+The below code is intended to create admin pages in the future.
+
+'''# Admin related
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Check if 'is_admin' is in session and is True
+        if 'is_admin' not in session or not session['is_admin']:
+            flash('You need to be an admin to view this page.')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/admin/users')
+@admin_required  # Ensure this route is protected so only admins can access it
+def admin_users():
+    db = get_db()
+    users = db.execute('SELECT UserID, Name, Email FROM Users').fetchall()
+    return render_template('admin/admin_users.html', users=users)
+
+
+@app.route('/admin/admin_restaurants')
+@admin_required
+def admin_restaurants():
+    db = get_db()
+    restaurants = db.execute('SELECT * FROM Restaurants').fetchall()
+    return render_template('admin/admin_restaurants.html', restaurants=restaurants)
+
+
+@app.route('/admin/restaurants/add', methods=['GET', 'POST'])
+@admin_required
+def add_restaurant():
+    if request.method == 'POST':
+        name = request.form['name']
+        address = request.form['address']
+        db = get_db()
+        db.execute('INSERT INTO Restaurants (Name, Address) VALUES (?, ?)', (name, address))
+        db.commit()
+        return redirect(url_for('admin_restaurants'))
+    return render_template('admin/add_restaurant.html')
+
+@app.route('/admin/restaurants/edit/<int:id>', methods=['GET', 'POST'])
+@admin_required
+def edit_restaurant(id):
+    db = get_db()
+    if request.method == 'POST':
+        name = request.form['name']
+        address = request.form['address']
+        db.execute('UPDATE Restaurants SET Name = ?, Address = ? WHERE RestaurantID = ?', (name, address, id))
+        db.commit()
+        return redirect(url_for('admin_restaurants'))
+    restaurant = db.execute('SELECT * FROM Restaurants WHERE RestaurantID = ?', (id,)).fetchone()
+    return render_template('admin/edit_restaurant.html', restaurant=restaurant)
+
+
+@app.route('/admin/restaurants/delete/<int:id>', methods=['GET', 'POST'])
+@admin_required
+def delete_restaurant(id):
+    db = get_db()
+    restaurant = db.execute('SELECT * FROM Restaurants WHERE RestaurantID = ?', (id,)).fetchone()
+    
+    if request.method == 'POST':
+        db.execute('DELETE FROM Restaurants WHERE RestaurantID = ?', (id,))
+        db.commit()
+        return redirect(url_for('admin_restaurants'))
+    
+    return render_template('admin/delete_restaurant.html', restaurant=restaurant)
+
+
+@app.route('/admin/admin_dashboard')
+@admin_required
+def admin_dashboard():
+    # Admin dashboard logic here
+    return render_template('/admin/admin_dashboard.html')'''

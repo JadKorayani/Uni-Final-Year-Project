@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:safe_dine/api_calls.dart';
 
 void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key});
 
   @override
   Widget build(BuildContext context) {
@@ -13,21 +15,66 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
       ),
       home: const SelectedRestaurantScreen(
-          restaurantName: 'Restaurant Name'), // Pass your restaurant name here
+        restaurantName: 'Restaurant Name',
+        restaurantID: '',
+        email: '',
+      ), // Pass your restaurant name here
     );
   }
 }
 
-class SelectedRestaurantScreen extends StatelessWidget {
+class SelectedRestaurantScreen extends StatefulWidget {
   final String restaurantName;
+  final String restaurantID;
+  final String email;
 
-  const SelectedRestaurantScreen({super.key, required this.restaurantName});
+  const SelectedRestaurantScreen({
+    Key? key,
+    required this.restaurantName,
+    required this.restaurantID,
+    required this.email,
+  }) : super(key: key);
+
+  @override
+  _SelectedRestaurantScreenState createState() =>
+      _SelectedRestaurantScreenState();
+}
+
+class _SelectedRestaurantScreenState extends State<SelectedRestaurantScreen> {
+  List<String> menuItems = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUserData();
+  }
+
+  Future<void> fetchUserData() async {
+    ApiService apiService = ApiService(); // Create an instance of ApiService
+    try {
+      var response =
+          await apiService.fetchRightItem(widget.restaurantID, widget.email);
+
+      print(response.statusCode);
+      if (response.statusCode == 200) {
+        var data = json.decode(response.body);
+        print(data);
+        // Extract menu items from the response and update the state
+        setState(() {
+          menuItems = List<String>.from(data['menu_items']);
+        });
+      } else {
+        print("response is : " + response.body);
+        throw Exception('Failed to load items');
+      }
+    } catch (e) {
+      print('Failed to load items: $e');
+      // Consider showing an error message or some UI indication
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Dummy list of menu items, replace with your actual data
-    final List<String> menuItems = ['Item 1', 'Item 2', 'Item 3'];
-
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -36,7 +83,7 @@ class SelectedRestaurantScreen extends StatelessWidget {
             // Navigate back to the restaurant list
           },
         ),
-        title: Text(restaurantName),
+        title: Text(widget.restaurantName),
       ),
       body: Column(
         children: <Widget>[
@@ -65,9 +112,7 @@ class SelectedRestaurantScreen extends StatelessWidget {
               itemBuilder: (BuildContext context, int index) {
                 return ListTile(
                   title: Text(menuItems[index]),
-                  onTap: () {
-                    // Navigate to the item menu or handle the action when tapping on an item
-                  },
+                  onTap: () {},
                 );
               },
             ),
