@@ -57,8 +57,6 @@ class _LoginScreenState extends State<LoginScreen> {
       // If the API call succeeds, navigate to the next screen
       // ignore: use_build_context_synchronously
       //Navigator.pushReplacementNamed(context, '/login');
-      print(userData);
-      print(response.statusCode);
       if (response.statusCode == 200) {
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('Email',
