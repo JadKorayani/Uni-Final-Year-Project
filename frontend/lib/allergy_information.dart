@@ -141,14 +141,10 @@ class _AllergyInformationScreenState extends State<AllergyInformationScreen> {
                   ),
                   ElevatedButton(
                     onPressed: () {
-                      if (kDebugMode) {
-                        print(_selectedAllergies);
-                      }
+                      if (kDebugMode) {}
                       // TODO: Implement the logic to save selected allergies to the backend or navigate as required
                       int allergyID = getAllergenID(_selectedAllergies.first);
                       String userEmail = widget.data;
-                      //print(allergyID);
-                      //print(userEmail);
                       sendAllergyToAPI(userEmail, allergyID);
                     },
                     style: ElevatedButton.styleFrom(
