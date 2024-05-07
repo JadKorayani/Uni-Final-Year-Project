@@ -1,56 +1,68 @@
+// Import necessary libraries and pages
 import 'package:flutter/material.dart';
 import 'login.dart';
-import 'user_details.dart'; // Ensure you have this screen
-import 'restaurants.dart'; // Ensure you have this screen
-import 'about.dart'; // Ensure you have this screen
-import 'contact.dart'; // Ensure you have this screen
-// Import other screens you need for navigation
+import 'user_details.dart';
+import 'restaurants.dart';
+import 'about.dart';
+import 'contact.dart';
 
+// Entry point of the application.
 void main() => runApp(const MyApp());
 
+// MyApp is a stateless widget that configures the root of your application.
 class MyApp extends StatelessWidget {
+  // Constructor with optional key parameter for widget identification
   const MyApp({super.key});
 
   @override
+  // Builds the material app with specific themes and named routes for navigation
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'AllergenEase',
+      title: 'SafeDine', // App title used in task manager and app switcher
       theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+        primarySwatch: Colors.blue, // Defines the color of the app theme
+        visualDensity: VisualDensity
+            .adaptivePlatformDensity, // Adjusts the density of the UI components based on the platform
       ),
-      // Removed 'home' and replaced it with 'initialRoute' and 'routes'
-      initialRoute: '/',
+      // Navigation control
+      initialRoute: '/', // Setting the initial route for the app.
       routes: {
-        '/': (context) => const WelcomeScreen(),
-        '/login': (context) => const LoginScreen(),
-        '/user_details': (context) => const UserDetailsPage(data: 'email'),
-        '/restaurants': (context) => const RestaurantsScreen(),
-        '/about': (context) => AboutPage(),
-        '/contact': (context) => ContactScreen(),
-        // Add more routes as needed
+        '/': (context) =>
+            const WelcomeScreen(), // Mapping WelcomeScreen to the root route.
+        '/login': (context) => const LoginScreen(), // Route for the LoginScreen
+        '/user_details': (context) => const UserDetailsPage(
+            data:
+                'email'), // Route for UserDetailsPage, passing 'email' as data
+        '/restaurants': (context) =>
+            const RestaurantsScreen(), // Route for the RestaurantsScreen
+        '/about': (context) => AboutPage(), // Route for AboutPage
+        '/contact': (context) => ContactScreen(), // Route for ContactScreen
       },
     );
   }
 }
 
+// WelcomeScreen widget provides the entry point view with a button to get started.
 class WelcomeScreen extends StatelessWidget {
+  // Constructor with optional key parameter for widget identification
   const WelcomeScreen({super.key});
 
   @override
+  // Builds the UI components for the WelcomeScreen
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
+        // Centers the button vertically and horizontally
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            // Your widget code remains the same
+            // A button that, when pressed, navigates to the LoginScreen using named routing
             ElevatedButton(
               onPressed: () {
-                // Updated to use named route for navigation
+                // Uses Navigator to push the '/login' named route onto the stack
                 Navigator.pushNamed(context, '/login');
               },
-              child: const Text('Get started'),
+              child: const Text('Get started'), // Button text
             ),
           ],
         ),
