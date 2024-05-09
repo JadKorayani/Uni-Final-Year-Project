@@ -1,6 +1,7 @@
 // Import necessary libraries and pages
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'nav_options.dart';
 import 'api_calls.dart';
 
@@ -31,11 +32,15 @@ class _UserDetailsPageState extends State<UserDetailsPage> {
 
   // Asynchronous method to fetch user details from an API
   Future<void> fetchUserData() async {
+    // On success, store the email in shared preferences
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    // Use non-null email from userData with a default fallback
+    String email = prefs.getString('Email') ?? '';
     ApiService apiService =
         ApiService(); // Initialize ApiService to make HTTP requests
     try {
       // Make a request to fetch user details
-      var response = await apiService.userdetails(widget.data);
+      var response = await apiService.userdetails(email);
 
       // Check if the response is successful.
       if (response.statusCode == 200) {
