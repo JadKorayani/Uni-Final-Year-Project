@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 class ApiService {
   // Base URL for the backend server; typically points to a local network during development.
   // the baseURL needs to be changed based on the generated URL from the backend
-  final String _baseUrl = "http://172.17.79.82:8080";
+  final String _baseUrl = "http://192.168.0.115:8080";
 
   // set static IP address
 
