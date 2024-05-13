@@ -1,5 +1,6 @@
 // Import necessary libraries
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // AppDrawer is a stateless widget, which means its properties can't change over time.
 class AppDrawer extends StatelessWidget {
@@ -25,32 +26,31 @@ class AppDrawer extends StatelessWidget {
           _createDrawerItem(
             icon: Icons.person,
             text: 'Profile',
-            onTap: () => _navigateTo(context, '/user_details',
-                data: 'email'), // Sets up navigation for the Profile item.
+            onTap: () => Navigator.pushNamed(context,
+                '/user_details'), // Sets up navigation for the Profile item.
           ),
           _createDrawerItem(
             icon: Icons.restaurant,
             text: 'Restaurants',
-            onTap: () => _navigateTo(context, '/restaurants',
-                data: ''), // Navigation for Restaurants
+            onTap: () => Navigator.pushNamed(
+                context, '/restaurants'), // Navigation for Restaurants
           ),
           _createDrawerItem(
             icon: Icons.info,
             text: 'About',
-            onTap: () => _navigateTo(context, '/about',
-                data: ''), // Navigation for About page
+            onTap: () => Navigator.pushNamed(
+                context, '/about'), // Navigation for About page
           ),
           _createDrawerItem(
             icon: Icons.contact_phone,
             text: 'Contact',
-            onTap: () => _navigateTo(context, '/contact',
-                data: ''), // Navigation for Contact page
+            onTap: () => Navigator.pushNamed(
+                context, '/contact'), // Navigation for Contact page
           ),
           _createDrawerItem(
             icon: Icons.exit_to_app,
             text: 'Log out',
-            onTap: () => _navigateTo(context, '/logout',
-                data: ''), // Navigation for logging out
+            onTap: () => _logout(context), // Navigation for logging out
           ),
         ],
       ),
@@ -59,9 +59,7 @@ class AppDrawer extends StatelessWidget {
 
   // Helper method to create a ListTile for the drawer items
   Widget _createDrawerItem(
-      {required IconData icon,
-      required String text,
-      required VoidCallback onTap}) {
+      {required IconData icon, required String text, VoidCallback? onTap}) {
     return ListTile(
       leading: Icon(icon), // Leading icon in the list tile
       title: Text(text), // Text label in the list tile
@@ -69,9 +67,13 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  // Navigation method to handle drawer item taps
-  void _navigateTo(BuildContext context, String route, {required String data}) {
-    Navigator.pop(context); // Close the drawer before navigating
-    Navigator.pushNamed(context, route); // Navigate to the specified route
+  void _logout(BuildContext context) async {
+    // Clear user data from SharedPreferences
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove('Email'); // Assume 'Email' is the key for user's email
+
+    // Navigate to the login screen and remove all routes behind
+    Navigator.of(context)
+        .pushNamedAndRemoveUntil('/login', (Route<dynamic> route) => false);
   }
 }
