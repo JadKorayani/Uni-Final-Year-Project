@@ -41,7 +41,6 @@ class _UserDetailsPageState extends State<UserDetailsPage> {
     try {
       // Make a request to fetch user details
       var response = await apiService.userdetails(email);
-
       // Check if the response is successful.
       if (response.statusCode == 200) {
         var data = json
